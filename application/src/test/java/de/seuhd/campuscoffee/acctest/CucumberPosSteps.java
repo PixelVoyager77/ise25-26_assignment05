@@ -84,7 +84,6 @@ public class CucumberPosSteps {
     }
 
     // Given -----------------------------------------------------------------------
-
     @Given("an empty POS list")
     public void anEmptyPosList() {
         List<PosDto> retrievedPosList = retrievePos();
@@ -92,6 +91,11 @@ public class CucumberPosSteps {
     }
 
     // TODO: Add Given step for new scenario
+    @Given("the following POS exist")
+    public void theFollowingPosExist(List<PosDto> posList) {
+        createdPosList = createPos(posList);
+        assertThat(createdPosList.size()).isEqualTo(posList.size());
+    }
 
     // When -----------------------------------------------------------------------
 
@@ -102,6 +106,36 @@ public class CucumberPosSteps {
     }
 
     // TODO: Add When step for new scenario
+    @When("I update the POS with name {string} to have the description {string}")
+    public void whenIupdateThePOSDescription(String name, String newDescription) {
+        PosDto existing = createdPosList.stream()
+            .filter(pos -> pos.name().equals(name))
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("POS not found with name: " + name));
+    
+        PosDto updated = PosDto.builder()
+            .id(existing.id())
+            .name(existing.name())
+            .description(newDescription)
+            .type(existing.type())
+            .campus(existing.campus())
+            .street(existing.street())
+            .houseNumber(existing.houseNumber())
+            .postalCode(existing.postalCode())
+            .city(existing.city())
+            .build();
+
+        RestAssured.given()
+            .contentType("application/json")
+            .body(updated)
+            .when()
+            .put("/api/pos/{id}", existing.id())
+            .then()
+            .statusCode(200);
+
+
+        updatedPos = updated;
+    }
 
     // Then -----------------------------------------------------------------------
 
@@ -114,4 +148,17 @@ public class CucumberPosSteps {
     }
 
     // TODO: Add Then step for new scenario
-}
+
+    @Then("the POS with name {string} should have the description {string}")
+    public void thePOSWithNameShouldHaveDescription(String name, String expectedDescription) {
+        List<PosDto> current = retrievePos();
+
+        PosDto pos = current.stream()
+            .filter(p -> p.name().equals(name))
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("POS not found with name: " + name));
+
+
+        assertThat(pos.description()).isEqualTo(expectedDescription);
+     }   
+ }  
